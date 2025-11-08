@@ -1,24 +1,24 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-
-# En -> Ka is opus-mt-synthetic-en-ka
-supported_languages = ["en", "ru", "ka"]
-from_lang = "ru"
-to_lang = "ka"
-
-tokenizer = AutoTokenizer.from_pretrained(f"Helsinki-NLP/opus-mt-{from_lang}-{to_lang}")
-model = AutoModelForSeq2SeqLM.from_pretrained(f"Helsinki-NLP/opus-mt-{from_lang}-{to_lang}")
-
-msg = "Как дела?"
-msg = "Мы прико́льно отдохну́ли на да́че."
-msg = "Он притвори́лся спя́щим."
-msg = "How's it going?"
-msg = "როგორ ხარ?"
-
-inputs = tokenizer(msg, return_tensors="pt")
-with torch.no_grad():
-    outputs = model.generate(**inputs)
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, MarianTokenizer, MarianMTModel
 
 
-translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-print(translated_text)
+def translate(msg: str, from_lang: str = "ka", to_lang: str = "en", tokenizer: MarianTokenizer = None, model: MarianMTModel = None) -> str:
+    supported_language_pairs: list[tuple[str, str]] = [("en", "ka"), ("ka", "en"), ("en", "ru"), ("ru", "en")]
+    if (from_lang, to_lang) not in supported_language_pairs:
+        return "<unsupported_language>"
+
+    if to_lang == "ka":  # For translation to Georgian, only English to Georgian model exists
+        from_lang = "synthetic-en"  # and only that model name contains "synthetic": opus-mt-synthetic-en-ka
+
+    if tokenizer is None:
+        tokenizer = AutoTokenizer.from_pretrained(f"Helsinki-NLP/opus-mt-{from_lang}-{to_lang}")
+    if model is None:
+        model = AutoModelForSeq2SeqLM.from_pretrained(f"Helsinki-NLP/opus-mt-{from_lang}-{to_lang}")
+
+    inputs = tokenizer(msg, return_tensors="pt")
+    with torch.no_grad():
+        outputs = model.generate(**inputs)
+
+    translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    return translated_text
