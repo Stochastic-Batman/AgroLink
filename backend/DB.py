@@ -2,50 +2,52 @@ import sqlite3
 
 
 def create_database():
-    conn = sqlite3.connect("store.db")
-    cur = conn.cursor()
+    with sqlite3.connect("store.db") as conn:
+        cur = conn.cursor()
 
-    # customers table
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS customers (
-            customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            phone TEXT UNIQUE NOT NULL,
-            email TEXT UNIQUE
-        )
-    """)
+        # customers table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS customers (
+                customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                phone TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE
+            )
+        """)
 
-    # products table
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS products (
-            product_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            price REAL NOT NULL,
-            stock_quantity INTEGER DEFAULT 1 NOT NULL,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+        # products table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS products (
+                product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                price REAL NOT NULL,
+                stock_quantity INTEGER DEFAULT 1 NOT NULL,
+                latitude FLOAT NOT NULL,
+                longitude FLOAT NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-    # transactions table
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS transactions (
-            transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            seller_id INTEGER NOT NULL,
-            buyer_id INTEGER NOT NULL,
-            product_id INTEGER NOT NULL,
-            quantity INTEGER NOT NULL,
-            total_price REAL NOT NULL,
-            transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (seller_id) REFERENCES customers(customer_id),
-            FOREIGN KEY (buyer_id) REFERENCES customers(customer_id),
-            FOREIGN KEY (product_id) REFERENCES products(product_id)
-        )
-    """)
+        # transactions table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS transactions (
+                transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seller_id INTEGER NOT NULL,
+                buyer_id INTEGER NOT NULL,
+                product_id INTEGER NOT NULL,
+                quantity INTEGER NOT NULL,
+                total_price REAL NOT NULL,
+                transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (seller_id) REFERENCES customers(customer_id),
+                FOREIGN KEY (buyer_id) REFERENCES customers(customer_id),
+                FOREIGN KEY (product_id) REFERENCES products(product_id)
+            )
+        """)
 
-    # Commit changes and close connection
-    conn.commit()
-    conn.close()
+        # Commit changes and close connection
+        conn.commit()
+
     print("Database and tables: customers, products and transactions created successfully (or already exist)")
 
 
@@ -135,7 +137,22 @@ def customers_update_many(where_clause: str, params: tuple, name: str = None, ph
         con.commit()
 
 
-def products_insert_one(name: str, price: float, stock_quantity: int = 1, description: str = None):
+def customers_delete_one(customer_id: int):
+    with sqlite3.connect("store.db") as con:
+        cur = con.cursor()
+        cur.execute("DELETE FROM customers WHERE customer_id = ?", (customer_id,))
+        con.commit()
+
+
+def customers_delete_many(where_clause: str, params: tuple):
+    with sqlite3.connect("store.db") as con:
+        cur = con.cursor()
+        query = f"DELETE FROM customers WHERE {where_clause}"
+        cur.execute(query, params)
+        con.commit()
+
+
+def products_insert_one(name: str, price: float, stock_quantity: int = 1, latitude: float = None, longitude: float = None, description: str = None):
     con = sqlite3.connect("store.db")
     cur = con.cursor()
 
@@ -145,30 +162,42 @@ def products_insert_one(name: str, price: float, stock_quantity: int = 1, descri
     if price is None:
         print("price must NOT be None!")
         return
+    if latitude is None:
+        print("latitude must NOT be None!")
+        return
+    if longitude is None:
+        print("longitude must NOT be None!")
+        return
 
-    cur.execute("INSERT INTO products (name, price, stock_quantity, description) VALUES(?, ?, ?, ?)", (name, price, stock_quantity, description))
+    cur.execute("INSERT INTO products (name, price, stock_quantity, latitude, longitude, description) VALUES(?, ?, ?, ?, ?, ?)", (name, price, stock_quantity, latitude, longitude, description))
     con.commit()
     con.close()
 
 
-def products_insert_many(product_list: list[tuple[str, float, int, str]]):
+def products_insert_many(product_list: list[tuple[str, float, int, float, float, str]]):
     con = sqlite3.connect("store.db")
     cur = con.cursor()
 
-    for i, (name, price, stock_quantity, description) in enumerate(product_list):
+    for i, (name, price, stock_quantity, latitude, longitude, description) in enumerate(product_list):
         if name is None:
             print(f"{i}: name must NOT be None!")
             return
         if price is None:
             print(f"{i}: price must NOT be None!")
             return
+        if latitude is None:
+            print(f"{i}: latitude must NOT be None!")
+            return
+        if longitude is None:
+            print(f"{i}: longitude must NOT be None!")
+            return
 
-    cur.executemany("INSERT INTO products (name, price, stock_quantity, description) VALUES(?, ?, ?, ?)", product_list)
+    cur.executemany("INSERT INTO products (name, price, stock_quantity, latitude, longitude, description) VALUES(?, ?, ?, ?, ?, ?)", product_list)
     con.commit()
     con.close()
 
 
-def products_update_one(product_id: int, name: str = None, price: float = None, stock_quantity: int = None, description: str = None):
+def products_update_one(product_id: int, name: str = None, price: float = None, stock_quantity: int = None, latitude: float = None, longitude: float = None, description: str = None):
     with sqlite3.connect("store.db") as con:
         cur = con.cursor()
 
@@ -184,6 +213,12 @@ def products_update_one(product_id: int, name: str = None, price: float = None, 
         if stock_quantity is not None:
             updates.append("stock_quantity = ?")
             params.append(stock_quantity)
+        if latitude is not None:
+            updates.append("latitude = ?")
+            params.append(latitude)
+        if longitude is not None:
+            updates.append("longitude = ?")
+            params.append(longitude)
         if description is not None:
             updates.append("description = ?")
             params.append(description)
@@ -198,7 +233,7 @@ def products_update_one(product_id: int, name: str = None, price: float = None, 
         con.commit()
 
 
-def products_update_many(where_clause: str, params: tuple, name: str = None, price: float = None, stock_quantity: int = None, description: str = None):
+def products_update_many(where_clause: str, params: tuple, name: str = None, price: float = None, stock_quantity: int = None, latitude: float = None, longitude: float = None, description: str = None):
     with sqlite3.connect("store.db") as con:
         cur = con.cursor()
 
@@ -214,6 +249,12 @@ def products_update_many(where_clause: str, params: tuple, name: str = None, pri
         if stock_quantity is not None:
             updates.append("stock_quantity = ?")
             update_params.append(stock_quantity)
+        if latitude is not None:
+            updates.append("latitude = ?")
+            update_params.append(latitude)
+        if longitude is not None:
+            updates.append("longitude = ?")
+            update_params.append(longitude)
         if description is not None:
             updates.append("description = ?")
             update_params.append(description)
@@ -369,20 +410,5 @@ def transactions_delete_many(where_clause: str, params: tuple):
     with sqlite3.connect("store.db") as con:
         cur = con.cursor()
         query = f"DELETE FROM transactions WHERE {where_clause}"
-        cur.execute(query, params)
-        con.commit()
-
-
-def customers_delete_one(customer_id: int):
-    with sqlite3.connect("store.db") as con:
-        cur = con.cursor()
-        cur.execute("DELETE FROM customers WHERE customer_id = ?", (customer_id,))
-        con.commit()
-
-
-def customers_delete_many(where_clause: str, params: tuple):
-    with sqlite3.connect("store.db") as con:
-        cur = con.cursor()
-        query = f"DELETE FROM customers WHERE {where_clause}"
         cur.execute(query, params)
         con.commit()
