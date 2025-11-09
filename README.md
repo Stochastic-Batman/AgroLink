@@ -1,4 +1,6 @@
-# AgroLink
+# AgroLink - formerly RandomRouting
+
+## **This code was never fully completed, though I did my part backend + DB + translation model. Due to our lack of time and frontend expertise, Lovable coded the while website, unfortunately...**
 
 A marketplace linking organic and bio-food farmers with restaurants, hotels, and food producers for wholesale, bulk purchases.
 
