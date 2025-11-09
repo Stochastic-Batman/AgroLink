@@ -137,7 +137,7 @@ def get_product(product_id: int):
     return {"product": product}
 
 
-@app.get("/products-listing")
+@app.get("/product-listings")
 def get_products_for_listing():
     products = products_get_listing()
     result = []
