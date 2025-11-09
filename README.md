@@ -12,7 +12,7 @@ This project uses Python 3.14.0. After making sure you are using the same versio
 
 and install requirements via:
 
-`pip -r requirements.txt`
+`pip install -r requirements.txt`
 
 ## Launching the chat from the same computer
 
