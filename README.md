@@ -1,6 +1,6 @@
 # AgroLink - formerly RandomRouting
 
-## **This code was never fully completed, though I did my part backend + DB + translation model. Due to our lack of time and frontend expertise, Lovable coded the while website, unfortunately...**
+## **This code was never fully completed, though I did my part backend + DB + translation model. Due to our lack of time and frontend expertise, Lovable coded the whole website, unfortunately...**
 
 A marketplace linking organic and bio-food farmers with restaurants, hotels, and food producers for wholesale, bulk purchases.
 
@@ -10,7 +10,7 @@ Ozurgeti Hackathon 2025 (Hackathon: ტექნოლოგიები მც�
 
 This project uses Python 3.14.0. After making sure you are using the same version of Python, create virtual environment by:
 
-`python -m venv rr_venv`
+`python -m venv al_venv`
 
 and install requirements via:
 
